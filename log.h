@@ -1,8 +1,12 @@
-//
-// Created by starry on 2019/9/2.
-//
+#ifndef LOG_H
+#define LOG_H
+#include <stdio.h>
+#include <time.h>
+#include <string.h>
+#include <syslog.h>
+#include <cstdarg>
 
-#ifndef TEST_LOG_H
-#define TEST_LOG_H
+void set_loglevel(int log_level = LOG_DEBUG);
+void log(int log_level, const char* file_name, int line_num, const char* format, ...);
 
-#endif //TEST_LOG_H
+#endif //LOG_H

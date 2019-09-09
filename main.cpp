@@ -15,6 +15,7 @@
 #include "locker.h"
 #include "util.h"
 #include "epoll.h"
+#include "log.h"
 
 #define MAX_FD 65536
 #define MAX_EVENT_NUMBER 10000
@@ -49,11 +50,12 @@ int main(int argc, char* argv[]) {
     int epollfd = createfd(5);
     addfd(epollfd, listenfd, false);
     http_conn::m_epollfd = epollfd;
-
+    int num = 0;
     while (true) {
         int number = waitfd(epollfd, events, MAXLISTEN, -1);
-
-
+//
+//        num += number;
+//        printf("%d\n",num);
         handle_event(epollfd, listenfd, pool, users, events, number, -1);
     }
     close(epollfd);

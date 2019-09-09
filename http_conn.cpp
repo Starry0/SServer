@@ -20,6 +20,7 @@ int http_conn::m_epollfd        = 0;
 
 void http_conn::close_conn(bool real_close) {
     if(real_close && (m_sockfd != -1)) {
+        shutdown(m_sockfd, SHUT_WR);
         removefd(m_epollfd, m_sockfd);
         m_sockfd = -1;
         m_user_count --;        /* 关闭一个连接时， 将客户总量减1*/
@@ -35,8 +36,8 @@ void http_conn::init(int sockfd, const sockaddr_in &addr) {
     getsockopt(m_sockfd, SOL_SOCKET, SO_ERROR, &error, &len);
 
     /*  下面两行是为了避免TIME_WAIT状态，仅用于调试，实际使用时应该去掉*/
-    int reuse = 1;
-    setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+//    int reuse = 1;
+//    setsockopt(m_sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
     addfd(m_epollfd, sockfd, true);
     m_user_count ++;
 
@@ -183,7 +184,7 @@ http_conn::HTTP_CODE http_conn::parse_headers(char *text) {
         text += strspn(text, " \t");
         m_host = text;
     } else {
-        printf("oop! unknow header %s\n", text);
+//        printf("oop! unknow header %s\n", text);
     }
     return NO_REQUEST;
 }
@@ -420,12 +421,14 @@ bool http_conn::process_write(http_conn::HTTP_CODE ret) {
 /* 由线程池中的工作线程调用，这是处理HTTP请求的入口函数*/
 void http_conn::process() {
     HTTP_CODE read_ret = process_read();
+    log(LOG_INFO, __FILE__, __LINE__, "read HTTP CODE %d", read_ret);
     if(read_ret == NO_REQUEST) {
         modfd(m_epollfd, m_sockfd, EPOLLIN);
         return;
     }
 
     bool write_ret = process_write(read_ret);
+    log(LOG_INFO, __FILE__, __LINE__, "write HTTP CODE %d", write_ret);
     if(!write_ret) {
         close_conn();
     }

@@ -3,6 +3,7 @@
 #define MAX_FD 65536
 #define MAX_EVENT_NUMBER 10000
 
+
 int createfd(int flags) {
     int epollfd = epoll_create(5);
     assert(epollfd != -1);
@@ -50,13 +51,15 @@ void handle_event(int epollfd, int listenfd, threadpool<http_conn>* pool, http_c
         printf("epoll failure\n");
         exit(1);
     }
-
+    log(LOG_INFO, __FILE__, __LINE__, "number %d",number);
     for(int i = 0; i < number; ++ i) {
         int sockfd = events[i].data.fd;
+        log(LOG_INFO, __FILE__, __LINE__, "%d %d",sockfd, events[i].events);
         if(sockfd == listenfd) {
             struct sockaddr_in client_address;
             socklen_t client_addrlength = sizeof(client_address);
             int connfd = accept(listenfd, (struct sockaddr*)&client_address, &client_addrlength);
+            log(LOG_INFO, __FILE__, __LINE__, "new client %d", connfd);
             if(connfd < 0) {
                 printf("errno is: %d\n",errno);
                 continue;
@@ -80,6 +83,7 @@ void handle_event(int epollfd, int listenfd, threadpool<http_conn>* pool, http_c
         } else if(events[i].events & EPOLLOUT) {
             /* 根据写的结果，决定是否关闭连接*/
             if(!users[sockfd].write()) {
+                log(LOG_INFO, __FILE__, __LINE__, "close 3");
                 users[sockfd].close_conn();
             }
         } else {

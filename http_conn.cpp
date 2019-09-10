@@ -13,7 +13,6 @@ const char* error_500_title     = "Internal Error";
 const char* error_500_form      = "There was an unusual problem serving the requested file.\n";
 
 
-unsigned
 /* 网站的根目录*/
 const char* doc_root = "/var/www/html";
 

@@ -7,8 +7,7 @@
 #include <pthread.h>
 
 #include "locker.h"
-
-void addfd(int epollfd, int fd, bool ont_shot);
+#include "log.h"
 
 /* 线程池类，将它定义为模板类是为了代码复用。模板参数T是任务类*/
 template <typename T>
@@ -52,7 +51,7 @@ threadpool<T>::threadpool(int thread_number, int max_requests) :
 
     /* 创建thread_number个线程，并将它们都设置为脱离线程*/
     for(int i = 0; i < thread_number; ++ i) {
-        printf("create the %dth thread\n", i);
+        log(LOG_INFO, __FILE__, __LINE__, "create the %dth thread", i);
         if(pthread_create(m_threads+i, NULL, worker, this) != 0) {
             delete[] m_threads;
             throw std::exception();
@@ -79,6 +78,7 @@ bool threadpool<T>::append(T *request) {
         return false;
     }
     m_workqueue.push_back(request);
+//    log(LOG_INFO, __FILE__, __LINE__, "queue size is %d",m_workqueue.size());
     m_queuelocker.unlock();
     m_queuestat.post();
     return true;
@@ -94,6 +94,7 @@ void* threadpool<T>::worker(void *arg) {
 template <typename T>
 void threadpool<T>::run() {
     while (!m_stop) {
+//        log(LOG_INFO, __FILE__, __LINE__, "thread id %d", pthread_self());
         m_queuestat.wait();
         m_queuelocker.lock();
         if(m_workqueue.empty()) {

@@ -17,6 +17,8 @@
 #include "epoll.h"
 #include "log.h"
 
+static time_heap client_time_heap(1024);
+
 #define MAX_FD 65536
 #define MAX_EVENT_NUMBER 10000
 
@@ -27,7 +29,6 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "read config error!!!");
         return -1;
     }
-
     /* 忽略SIGPIPE信号*/
     addsig(SIGPIPE, SIG_IGN);
 
@@ -52,11 +53,10 @@ int main(int argc, char* argv[]) {
     http_conn::m_epollfd = epollfd;
     int num = 0;
     while (true) {
+        client_time_heap.tick();
         int number = waitfd(epollfd, events, MAXLISTEN, -1);
-//
-//        num += number;
-//        printf("%d\n",num);
-        handle_event(epollfd, listenfd, pool, users, events, number, -1);
+
+        handle_event(epollfd, listenfd, pool, users, events, number, -1, &client_time_heap);
     }
     close(epollfd);
     close(listenfd);

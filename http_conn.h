@@ -19,7 +19,10 @@
 #include <errno.h>
 #include <pthread.h>
 
+#include "time_heap.h"
 #include "locker.h"
+
+class heap_timer;   /* 前向声明*/
 
 class http_conn{
 public:
@@ -88,6 +91,8 @@ public:
     static int m_epollfd;
     /* 统计用户数量*/
     static int m_user_count;
+    /* 定时器*/
+    heap_timer* timer;
 
 private:
     /* 该HTTP连接的socket和对应的socket地址*/

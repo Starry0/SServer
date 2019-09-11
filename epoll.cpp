@@ -4,6 +4,10 @@
 #define MAX_EVENT_NUMBER 10000
 
 
+void cb_func(http_conn* user_data) {
+    user_data->close_conn();
+}
+
 int createfd(int flags) {
     int epollfd = epoll_create(5);
     assert(epollfd != -1);
@@ -46,7 +50,7 @@ int waitfd(int epollfd, epoll_event *event, int max_events, int timeout) {
 }
 
 void handle_event(int epollfd, int listenfd, threadpool<http_conn>* pool, http_conn* users,
-        epoll_event *events, int number, int timeout) {
+        epoll_event *events, int number, int timeout,time_heap *client_time_heap) {
     if((number < 0) && (errno != EINTR)) {
         printf("epoll failure\n");
         exit(1);
@@ -70,6 +74,24 @@ void handle_event(int epollfd, int listenfd, threadpool<http_conn>* pool, http_c
             }
             /* 初始化客户连接*/
             users[connfd].init(connfd, client_address);
+
+            heap_timer* timer = new heap_timer(TIMESLOT);
+            log(LOG_INFO, __FILE__, __LINE__, "timer %d", timer->expire);
+            if(timer) {
+                timer->user_data = &users[connfd];
+                timer->cb_fun = cb_func;
+
+                int ret = client_time_heap->add_timer(timer);
+                if(ret == -1) {
+                    log(LOG_INFO, __FILE__, __LINE__, "client %d add tiemr failed!", connfd);
+                } else {
+                    users[connfd].timer = timer;
+                }
+
+            } else {
+                log(LOG_INFO, __FILE__, __LINE__, "client %d add timer failure!", connfd);
+            }
+
         } else if(events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
             /* 如果有异常，直接关闭客户连接*/
             users[sockfd].close_conn();
